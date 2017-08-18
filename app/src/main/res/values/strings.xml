@@ -7,4 +7,5 @@
     <string name="mapquest_key">CdFGdTeBpVufv0VQSMJ0AhT7EWGAIcl8</string>
     <string name="enable_tracking">Enable Track</string>
     <string name="disable_tracking">Disable Track</string>
+    <string name="center_curr_loc">Center current Location</string>
 </resources>

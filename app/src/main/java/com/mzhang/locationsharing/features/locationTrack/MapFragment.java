@@ -166,7 +166,10 @@ public class MapFragment extends Fragment implements LocationListener, GoogleApi
         mMapView.setOnTouchListener(new View.OnTouchListener() {
             @Override
             public boolean onTouch(View v, MotionEvent event) {
-                bUserInteraction = true;
+                if (!bUserInteraction) {
+                    addOptionMenuItem(R.string.center_curr_loc);
+                    bUserInteraction = true;
+                }
                 return false;
             }
         });
@@ -283,7 +286,10 @@ public class MapFragment extends Fragment implements LocationListener, GoogleApi
             new com.mapbox.mapboxsdk.maps.MapboxMap.OnMapClickListener() {
         @Override
         public void onMapClick(@NonNull LatLng latLng) {
-            bUserInteraction = true;
+            if (!bUserInteraction) {
+                addOptionMenuItem(R.string.center_curr_loc);
+                bUserInteraction = true;
+            }
         }
     };
 
@@ -385,6 +391,7 @@ public class MapFragment extends Fragment implements LocationListener, GoogleApi
 
     @Override
     public void onLocationChanged(Location location) {
+        mCurrentLocation = location;
         LatLng latLng = new LatLng(location.getLatitude(), location.getLongitude());
         String locString = gson.toJson(latLng);
         sendChatMsg(locString);
@@ -542,12 +549,21 @@ public class MapFragment extends Fragment implements LocationListener, GoogleApi
     private boolean isTrackable = false;
     private Menu menu;
 
+    private void addOptionMenuItem(int item) {
+        menu.add(0, R.id.menu_center_loc, 0, item);
+    }
+
+    private void removeMenuItem() {
+        menu.removeItem(R.id.menu_center_loc);
+    }
+
     @Override
     public void onCreateOptionsMenu(Menu menu, MenuInflater inflater) {
 //        super.onCreateOptionsMenu(menu, inflater);
         this.menu = menu;
         menu.clear();
         inflater.inflate(R.menu.main_menu, menu);
+        menu.removeItem(R.id.menu_center_loc);
 //        menu.add(0, EDIT_MENU_ITEM_ID, 0, R.string.enable_tracking);
     }
 
@@ -580,6 +596,13 @@ public class MapFragment extends Fragment implements LocationListener, GoogleApi
                     menu.getItem(1).setTitle(R.string.disable_tracking);
                 }
                 return true;
+            case R.id.menu_center_loc:
+                bUserInteraction = false;
+                if (mCurrentLocation != null) {
+                    displayLocation(mCurrentLocation);
+                }
+                return true;
+
             default:
                 return false;
         }
