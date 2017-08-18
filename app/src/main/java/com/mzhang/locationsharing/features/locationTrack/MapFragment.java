@@ -94,7 +94,7 @@ public class MapFragment extends Fragment implements LocationListener, GoogleApi
     private LocationManager mLocationManager;
 
     private DatabaseReference mRef;
-    private DatabaseReference mChatRef;
+    private DatabaseReference mLocationRef;
 
     private FirebaseRecyclerAdapter<LocationInfo, InfoViewHolder> mAdapter;
     private static int SIGN_IN_REQUEST_CODE = 1001;
@@ -177,8 +177,7 @@ public class MapFragment extends Fragment implements LocationListener, GoogleApi
 
         //        Set up location sharing channel
         mRef = FirebaseDatabase.getInstance().getReference();
-//        mChatRef = mRef.child("chat_rooms");
-        mChatRef = mRef;
+        mLocationRef = mRef;
         mManager = new LinearLayoutManager(mActivity);
         mManager.setReverseLayout(false);
 
@@ -196,7 +195,7 @@ public class MapFragment extends Fragment implements LocationListener, GoogleApi
             );
         } else {
             // User is already signed in. Therefore, display
-            displayChatMessages_2();
+            displayLocationMessages();
         }
 
         return rootView;
@@ -394,7 +393,7 @@ public class MapFragment extends Fragment implements LocationListener, GoogleApi
         mCurrentLocation = location;
         LatLng latLng = new LatLng(location.getLatitude(), location.getLongitude());
         String locString = gson.toJson(latLng);
-        sendChatMsg(locString);
+        sendLocationMsg(locString);
         displayLocation(location);
     }
 
@@ -413,16 +412,16 @@ public class MapFragment extends Fragment implements LocationListener, GoogleApi
 
     }
 
-    private void displayChatMessages_2() {
+    private void displayLocationMessages() {
         bUserLoggedin = true;
-        Query lastFifty = mChatRef.limitToLast(6);
+        Query lastFifty = mLocationRef.limitToLast(6);
         mAdapter = new FirebaseRecyclerAdapter<LocationInfo, InfoViewHolder>(
                 LocationInfo.class, R.layout.message_b, InfoViewHolder.class, lastFifty) {
             @Override
-            public void populateViewHolder(InfoViewHolder holder, LocationInfo chat, int position) {
-                long timeStamp = chat.getMessageTime();
-                String msgUser = chat.getName();
-                String msgText = chat.getMessage();
+            public void populateViewHolder(InfoViewHolder holder, LocationInfo info, int position) {
+                long timeStamp = info.getMessageTime();
+                String msgUser = info.getName();
+                String msgText = info.getLocation();
 
                 Log.d(TAG, "received msg position: " + position);
                 Log.d(TAG, "received from: " + msgUser);
@@ -430,14 +429,9 @@ public class MapFragment extends Fragment implements LocationListener, GoogleApi
 
 //                String currentUser = FirebaseAuth.getInstance().getCurrentUser().getDisplayName();
 
-                addMarker(chat);
+                addMarker(info);
             }
 
-//            @Override
-//            protected void onDataChanged() {
-//                // If there are no chat messages, show a view that invites the user to add a message.
-////                mEmptyListMessage.setVisibility(mAdapter.getItemCount() == 0 ? View.VISIBLE : View.GONE);
-//            }
         };
 
         // Scroll to bottom on new messages
@@ -451,9 +445,9 @@ public class MapFragment extends Fragment implements LocationListener, GoogleApi
         mMessages.setAdapter(mAdapter);
     }
 
-    private void addMarker(LocationInfo chat) {
-        String msgUser = chat.getName();
-        String msgText = chat.getMessage();
+    private void addMarker(LocationInfo info) {
+        String msgUser = info.getName();
+        String msgText = info.getLocation();
 
         Log.d(TAG, "received msg msgText: " + msgText);
         LatLng latLng;
@@ -483,7 +477,7 @@ public class MapFragment extends Fragment implements LocationListener, GoogleApi
         }
     }
 
-    private void sendChatMsg(String message) {
+    private void sendLocationMsg(String message) {
         if (!bUserLoggedin) {
             return;
         }
@@ -495,7 +489,7 @@ public class MapFragment extends Fragment implements LocationListener, GoogleApi
             return;
         }
 
-        mChatRef.push()
+        mLocationRef.push()
                 .setValue(new LocationInfo(msg, user));
     }
 

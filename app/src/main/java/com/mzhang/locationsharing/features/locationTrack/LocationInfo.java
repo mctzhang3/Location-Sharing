@@ -24,7 +24,7 @@ public class LocationInfo {
 
     }
 
-    public String getMessage() {
+    public String getLocation() {
         return mLatLng;
     }
 
