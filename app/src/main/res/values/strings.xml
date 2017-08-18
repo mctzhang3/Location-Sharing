@@ -1,0 +1,10 @@
+<resources>
+    <string name="app_name">Location sharing</string>
+
+    <!-- TODO: Remove or change this placeholder text -->
+    <string name="hello_blank_fragment">Hello blank fragment</string>
+
+    <string name="mapquest_key">CdFGdTeBpVufv0VQSMJ0AhT7EWGAIcl8</string>
+    <string name="enable_tracking">Enable Track</string>
+    <string name="disable_tracking">Disable Track</string>
+</resources>

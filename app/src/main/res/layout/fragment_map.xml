@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/activity_main"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    tools:context="com.mzhang.locationsharing.activities.MainActivity">
+
+    <com.mapquest.mapping.maps.MapView
+        android:id="@+id/mapquest_mapFragment"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        app:mapquest_app_key="@string/mapquest_key" />
+
+    <android.support.v7.widget.RecyclerView
+        android:id="@+id/messagesList"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:layout_alignParentLeft="true"
+        android:layout_alignParentStart="true"
+        android:layout_alignParentTop="true"
+        android:layout_alignParentEnd="true"
+        android:layout_alignParentRight="true"
+        android:dividerHeight="16dp"
+        android:divider="@android:color/transparent"
+        android:clipToPadding="false"
+        android:stackFromBottom="true"
+        android:layout_marginBottom="10dp"
+        android:visibility="invisible"
+        tools:listitem="@layout/message_b"/>
+
+
+</RelativeLayout>

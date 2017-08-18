@@ -1,0 +1,85 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:paddingBottom="0dp"
+    android:paddingTop="2dp"
+    android:orientation="vertical">
+
+    <TextView
+        android:id="@+id/time_text"
+        style="@style/TextAppearance.AppCompat.Small"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginRight="14dp"
+        android:layout_marginLeft="5dp"
+        android:layout_marginTop="8dp"
+        android:layout_marginBottom="8dp"
+        android:padding="3dp"
+        android:textIsSelectable="true"
+        android:layout_gravity="center_horizontal"
+        tools:text="date time"
+        android:textSize="12sp"
+        android:visibility="visible"/>
+
+    <RelativeLayout
+        android:id="@+id/message_container"
+        android:layout_below="@id/time_text"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        >
+        <TextView
+            android:id="@+id/name_text"
+            style="@style/TextAppearance.AppCompat.Small"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:textIsSelectable="true"
+            android:layout_marginLeft="12dp"
+            android:paddingBottom="3dp"
+            tools:text="Some User"/>
+
+        <FrameLayout
+            android:layout_below="@id/name_text"
+            android:id="@+id/left_arrow"
+            android:layout_width="45dp"
+            android:layout_height="45dp"
+            android:layout_marginLeft="4dp"
+            android:layout_marginStart="4dp"
+            android:rotation="180"
+            android:visibility="gone"/>
+
+        <LinearLayout
+            android:layout_below="@id/name_text"
+            android:id="@+id/message"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginLeft="16dp"
+            android:layout_marginRight="16dp"
+            android:orientation="vertical"
+            android:padding="0dp">
+
+            <TextView
+                android:id="@+id/message_text"
+                style="@style/TextAppearance.AppCompat.Medium"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:textIsSelectable="true"
+                tools:text="Hey this is a message, look!"/>
+
+        </LinearLayout>
+
+        <FrameLayout
+            android:layout_below="@id/name_text"
+            android:id="@+id/right_arrow"
+            android:layout_width="45dp"
+            android:layout_height="45dp"
+            android:layout_alignEnd="@+id/message"
+            android:layout_alignRight="@+id/message"
+            android:layout_marginEnd="-23dp"
+            android:layout_marginRight="-23dp"
+            android:rotation="180"
+            android:visibility="gone"/>
+    </RelativeLayout>
+</LinearLayout>

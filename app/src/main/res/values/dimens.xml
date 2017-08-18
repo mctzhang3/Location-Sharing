@@ -1,0 +1,45 @@
+<resources>
+    <!-- Default screen margins, per the Android Design guidelines. -->
+    <!--<dimen name="activity_horizontal_margin">16dp</dimen>-->
+    <!--<dimen name="activity_vertical_margin">16dp</dimen>-->
+    <dimen name="fab_margin">16dp</dimen>
+    <dimen name="appbar_padding_top">8dp</dimen>
+
+    <!-- Default screen margins, per the Android Design guidelines. -->
+    <dimen name="activity_horizontal_margin">16dp</dimen>
+    <dimen name="activity_vertical_margin">16dp</dimen>
+    <dimen name="gear_settings_items_padding">15dp</dimen>
+    <dimen name="turn_icons_dimen">30dp</dimen>
+
+    <dimen name="divider_width">0.5dp</dimen>
+
+    <!-- Navigation close dialog -->
+    <dimen name="close_nav_dialog_width">240dp</dimen>
+    <dimen name="close_nav_dialog_height">250dp</dimen>
+
+    <!-- route options dimensions-->
+    <dimen name="five_dp">5dp</dimen>
+    <dimen name="ten">10dp</dimen>
+    <dimen name="twelve_dp">12dp</dimen>
+    <dimen name="thirteen_dp">13dp</dimen>
+    <dimen name="fifteen_dp">15dp</dimen>
+    <dimen name="seventeen_dp">17dp</dimen>
+    <dimen name="twenty_dp">20dp</dimen>
+    <dimen name="twenty_two_dp">22dp</dimen>
+    <dimen name="twenty_five_dp">25dp</dimen>
+    <dimen name="twenty_nine_dp">29dp</dimen>
+    <dimen name="thirty_dp">30dp</dimen>
+    <dimen name="thirty_five_dp">35dp</dimen>
+    <dimen name="thirty_eight_dp">38dp</dimen>
+    <dimen name="fourty_one_dp">41dp</dimen>
+    <dimen name="fourty_three_dp">43dp</dimen>
+    <dimen name="sixty_dp">60dp</dimen>
+    <dimen name="seventy_four_dp">74dp</dimen>
+    <dimen name="seventy_eight_dp">78dp</dimen>
+    <dimen name="eighty_six_dp">86dp</dimen>
+    <dimen name="ninety_three_dp">93dp</dimen>
+    <dimen name="one_hundred_ten_dp">110dp</dimen>
+    <dimen name="one_hundred_sixteen_dp">116dp</dimen>
+    <dimen name="one_hundred_thirty_dp">130dp</dimen>
+
+</resources>
