@@ -483,7 +483,7 @@ public class MapFragment extends Fragment implements LocationListener, GoogleApi
         }
 
         String user = FirebaseAuth.getInstance().getCurrentUser().getDisplayName();
-        String msg = message;
+        String msg = "test";
 
         if (msg.isEmpty()) {
             return;
