@@ -28,6 +28,8 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Toast;
 
+import com.android.volley.Response;
+import com.android.volley.VolleyError;
 import com.firebase.ui.auth.AuthUI;
 import com.firebase.ui.database.FirebaseRecyclerAdapter;
 import com.google.android.gms.common.api.GoogleApiClient;
@@ -48,6 +50,7 @@ import com.google.firebase.database.FirebaseDatabase;
 import com.google.firebase.database.Query;
 import com.google.gson.Gson;
 import com.google.gson.JsonSyntaxException;
+import com.mapbox.mapboxsdk.annotations.Marker;
 import com.mapbox.mapboxsdk.annotations.MarkerOptions;
 import com.mapbox.mapboxsdk.annotations.Polyline;
 import com.mapbox.mapboxsdk.annotations.PolylineOptions;
@@ -58,10 +61,17 @@ import com.mapquest.mapping.maps.MapView;
 import com.mapquest.mapping.maps.MapboxMap;
 import com.mapquest.mapping.maps.OnMapReadyCallback;
 import com.mzhang.locationsharing.R;
+import com.mzhang.locationsharing.network.Constants;
+import com.mzhang.locationsharing.network.RequestController;
+import com.mzhang.locationsharing.network.responses.mapquest.Locations;
+import com.mzhang.locationsharing.network.responses.mapquest.Results;
+import com.mzhang.locationsharing.network.responses.mapquest.Reverse;
 //import com.mapquest.mapping.MapQuestAccountManager;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import static com.google.android.gms.location.LocationServices.getFusedLocationProviderClient;
 //import static com.mapbox.mapboxsdk.Mapbox.getApplicationContext;
@@ -76,7 +86,10 @@ import static com.google.android.gms.location.LocationServices.getFusedLocationP
  * Use the {@link MapFragment#newInstance} factory method to
  * create an instance of this fragment.
  */
-public class MapFragment extends Fragment implements LocationListener, GoogleApiClient.ConnectionCallbacks {
+public class MapFragment extends Fragment implements LocationListener,
+        GoogleApiClient.ConnectionCallbacks, MapboxMap.OnInfoWindowClickListener,
+        MapboxMap.OnMarkerClickListener, MapView.OnMapChangedListener,
+        Response.Listener, Response.ErrorListener {
     private static final String TAG = "MapFragment";
     // TODO: Rename parameter arguments, choose names that match
     // the fragment initialization parameters, e.g. ARG_ITEM_NUMBER
@@ -114,6 +127,17 @@ public class MapFragment extends Fragment implements LocationListener, GoogleApi
 
     private long UPDATE_INTERVAL = 10 * 1000;  /* 10 secs */
     private long FASTEST_INTERVAL = 2000; /* 2 sec */
+
+    private static final int EDIT_MENU_ITEM_ID = 6;
+    private boolean isTrackable = false;
+    private boolean isSharing = false;
+    private Menu menu;
+
+    // current speed
+//    private String mCurrentSpeed = "";
+    private String mSpeedLimit = "";
+    private Marker mMarker = null;
+    private boolean bIsMarkerClicked = false;
 
     public MapFragment() {
         // Required empty public constructor
@@ -163,6 +187,7 @@ public class MapFragment extends Fragment implements LocationListener, GoogleApi
         mMapView = (MapView) rootView.findViewById(R.id.mapquest_mapFragment);
         mMapView.onCreate(savedInstanceState);
         mMapView.getMapAsync(onMapReadyCallback);
+//        mMapView.addOnMapChangedListener(MapFragment.this);
         mMapView.setOnTouchListener(new View.OnTouchListener() {
             @Override
             public boolean onTouch(View v, MotionEvent event) {
@@ -213,7 +238,8 @@ public class MapFragment extends Fragment implements LocationListener, GoogleApi
             if (mCurrentLocation != null) {
                 displayLocation(mCurrentLocation);
             }
-//                mMapboxMap.setOnInfoWindowClickListener(MapBaseFragment.this);
+            mMapboxMap.setOnInfoWindowClickListener(MapFragment.this);
+//            mMapboxMap.setOnMarkerClickListener(MapFragment.this);
         }
     };
 
@@ -392,10 +418,57 @@ public class MapFragment extends Fragment implements LocationListener, GoogleApi
     public void onLocationChanged(Location location) {
         mCurrentLocation = location;
         LatLng latLng = new LatLng(location.getLatitude(), location.getLongitude());
-        String locString = gson.toJson(latLng);
-        sendLocationMsg(locString);
+        sendSpeedLimitRequest(latLng);
+        float speed = location.getSpeed() * 3600 / 1609;
+        speed = ((int) (speed * 10)) / 10;
+        LocationData locationData = new LocationData(latLng, speed, mSpeedLimit);
+        String locString = gson.toJson(locationData);
+        if (isSharing) {
+            sendLocationMsg(locString);
+        }
         displayLocation(location);
     }
+
+    private void sendSpeedLimitRequest(LatLng latLng) {
+        StringBuffer pathParam = new StringBuffer("");
+        String latLngStr = Double.toString(latLng.getLatitude()) + ","
+                + Double.toString(latLng.getLongitude());
+
+        Map<String, String> headers = new HashMap<String, String>();
+        headers.put("Content-Type", "application/json");
+        headers.put("Accept", "application/json");
+
+        pathParam.append("/geocoding/v1/reverse?key=")
+                .append(getResources().getString(R.string.mapquest_key))
+                .append("&location=")
+                .append(latLngStr)
+                .append("&includeRoadMetadata=true&includeNearestIntersection=true");
+
+        RequestController geocodeRequest = new RequestController(Constants.serviceName.GEO_REVERSE, headers, null,
+                pathParam.toString(), this, this);
+
+        geocodeRequest.execute();
+
+    }
+
+    @Override
+    public void onErrorResponse(VolleyError error) {
+
+    }
+
+    @Override
+    public void onResponse(Object response) {
+        if (response instanceof Reverse) {
+            Reverse reverse = (Reverse) response;
+            Results[] results = reverse.getResults();
+            Locations[] locations = results[0].getLocations();
+//            Results results1 = results[0];
+            mSpeedLimit = locations[0].getRoadMetadata().getSpeedLimit();
+
+        }
+
+    }
+
 
     @Override
     public void onStatusChanged(String provider, int status, Bundle extras) {
@@ -421,7 +494,7 @@ public class MapFragment extends Fragment implements LocationListener, GoogleApi
             public void populateViewHolder(InfoViewHolder holder, LocationInfo info, int position) {
                 long timeStamp = info.getMessageTime();
                 String msgUser = info.getName();
-                String msgText = info.getLocation();
+                String msgText = info.getmLatLng();
 
                 Log.d(TAG, "received msg position: " + position);
                 Log.d(TAG, "received from: " + msgUser);
@@ -429,7 +502,9 @@ public class MapFragment extends Fragment implements LocationListener, GoogleApi
 
 //                String currentUser = FirebaseAuth.getInstance().getCurrentUser().getDisplayName();
 
-                addMarker(info);
+                if ((msgText != null) && isSharing) {
+                    addMarker(info);
+                }
             }
 
         };
@@ -447,22 +522,29 @@ public class MapFragment extends Fragment implements LocationListener, GoogleApi
 
     private void addMarker(LocationInfo info) {
         String msgUser = info.getName();
-        String msgText = info.getLocation();
+        String msgText = info.getmLatLng();
 
         Log.d(TAG, "received msg msgText: " + msgText);
+        LocationData locationData;
         LatLng latLng;
 
         try {
-            latLng = gson.fromJson(msgText, LatLng.class);
+            locationData = gson.fromJson(msgText, LocationData.class);
         } catch (IllegalStateException | JsonSyntaxException exception) {
             Log.d(TAG, "exception msg: " + msgText);
             exception.printStackTrace();
             return;
         }
 
+        latLng = locationData.getLatLng();
         String currentUser = FirebaseAuth.getInstance().getCurrentUser().getDisplayName();
         if (currentUser.equalsIgnoreCase(msgUser)) {
             return;
+        }
+
+        boolean bIsInfoWindowShown = false;
+        if (mMarker != null) {
+            bIsInfoWindowShown = mMarker.isInfoWindowShown();
         }
 
         if (mMapboxMap != null) {
@@ -472,10 +554,20 @@ public class MapFragment extends Fragment implements LocationListener, GoogleApi
                 mRoutePoints.add(latLng);
                 drawPolylines(mRoutePoints);
             }
-            mMapboxMap.addMarker(new MarkerOptions().position(latLng).title(msgUser));
 
+            mMarker = mMapboxMap.addMarker(new MarkerOptions().position(latLng).title(msgUser));
+
+            mMarker.setTitle(msgUser + "\n" + "Current Speed: " + locationData.getDeviceSpeed()
+                    + "\nRoad Speed Limit: " + locationData.getRoadSpeedLimit());
+            if (bIsInfoWindowShown) {
+                mMarker.showInfoWindow(mMapboxMap, mMapView);
+            }
         }
     }
+
+//    private void displayMarkerInfoWindow() {
+//            mMarker.showInfoWindow(mMapboxMap, mMapView);
+//    }
 
     private void sendLocationMsg(String message) {
         if (!bUserLoggedin) {
@@ -524,6 +616,35 @@ public class MapFragment extends Fragment implements LocationListener, GoogleApi
 
     }
 
+    @Override
+    public boolean onMarkerClick(@NonNull Marker marker) {
+//        bIsMarkerClicked = true;
+//        marker.showInfoWindow(mMapboxMap, mMapView);
+//        mMarker = marker;
+        return false;
+    }
+
+    @Override
+    public boolean onInfoWindowClick(@NonNull Marker marker) {
+        if (marker == null) return false;
+
+        if (marker.isInfoWindowShown()) {
+            marker.hideInfoWindow();
+//            bIsMarkerClicked = false;
+        } else {
+            marker.showInfoWindow(mMapboxMap, mMapView);
+        }
+
+        return true;
+    }
+
+    @Override
+    public void onMapChanged(int i) {
+//        if ((mMarker != null) && bIsMarkerClicked) {
+//            mMarker.showInfoWindow(mMapboxMap, mMapView);
+//        }
+    }
+
     /**
      * This interface must be implemented by activities that contain this
      * fragment to allow an interaction in this fragment to be communicated
@@ -538,10 +659,6 @@ public class MapFragment extends Fragment implements LocationListener, GoogleApi
         // TODO: Update argument type and name
         void onFragmentInteraction(Uri uri);
     }
-
-    private static final int EDIT_MENU_ITEM_ID = 6;
-    private boolean isTrackable = false;
-    private Menu menu;
 
     private void addOptionMenuItem(int item) {
         menu.add(0, R.id.menu_center_loc, 0, item);
@@ -580,18 +697,38 @@ public class MapFragment extends Fragment implements LocationListener, GoogleApi
                             }
                         });
                 return true;
+            case R.id.menu_enable_share:
+                if (isSharing) {
+                    isSharing = false;
+                    isTrackable = false;
+                    mRoutePoints.clear();
+                    if (mMapboxMap != null) {
+                        mMapboxMap.clear();
+                    }
+                    menu.getItem(1).setTitle(R.string.enable_sharing);
+                } else {
+                    isSharing = true;
+                    menu.getItem(1).setTitle(R.string.disable_sharing);
+                }
+                return true;
             case R.id.menu_enable_track:
                 if (isTrackable) {
                     isTrackable = false;
                     mRoutePoints.clear();
-                    menu.getItem(1).setTitle(R.string.enable_tracking);
+                    menu.getItem(2).setTitle(R.string.enable_tracking);
                 } else {
-                    isTrackable = true;
-                    menu.getItem(1).setTitle(R.string.disable_tracking);
+                    if(isSharing) {
+                        isTrackable = true;
+                        menu.getItem(2).setTitle(R.string.disable_tracking);
+                    } else {
+                        Toast.makeText(mActivity, "Please share location before enable tracking",
+                                Toast.LENGTH_SHORT);
+                    }
                 }
                 return true;
             case R.id.menu_center_loc:
                 bUserInteraction = false;
+                menu.removeItem(R.id.menu_center_loc);
                 if (mCurrentLocation != null) {
                     displayLocation(mCurrentLocation);
                 }

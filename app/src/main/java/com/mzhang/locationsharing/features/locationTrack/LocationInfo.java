@@ -24,13 +24,14 @@ public class LocationInfo {
 
     }
 
-    public String getLocation() {
+    public void setmLatLng(String mLatLng) {
+        this.mLatLng = mLatLng;
+    }
+
+    public String getmLatLng() {
         return mLatLng;
     }
 
-    public void setMessage(String mMessage) {
-        this.mLatLng = mMessage;
-    }
 
     public String getName() {
         return mName;

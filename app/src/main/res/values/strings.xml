@@ -5,6 +5,8 @@
     <string name="hello_blank_fragment">Hello blank fragment</string>
 
     <string name="mapquest_key">CdFGdTeBpVufv0VQSMJ0AhT7EWGAIcl8</string>
+    <string name="enable_sharing">Share Location</string>
+    <string name="disable_sharing">Unshare Location</string>
     <string name="enable_tracking">Enable Track</string>
     <string name="disable_tracking">Disable Track</string>
     <string name="center_curr_loc">Center current Location</string>

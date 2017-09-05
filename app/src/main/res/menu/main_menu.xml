@@ -4,9 +4,11 @@
 
     <item android:title="Sign out" app:showAsAction="never"
         android:id="@+id/menu_sign_out"/>
-    <item android:title="Enable Track" app:showAsAction="never"
+    <item android:title="@string/enable_sharing" app:showAsAction="never"
+        android:id="@+id/menu_enable_share"/>
+    <item android:title="@string/enable_tracking" app:showAsAction="never"
         android:id="@+id/menu_enable_track"/>
-    <item android:title="Center current Location" app:showAsAction="never"
+    <item android:title="@string/center_curr_loc" app:showAsAction="never"
         android:id="@+id/menu_center_loc"/>
 
 </menu>
