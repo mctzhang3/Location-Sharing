@@ -10,23 +10,27 @@ public class LocationData {
     private LatLng latLng;
     private float deviceSpeed;
     private String roadSpeedLimit;
+    private AlertMessage alertMessage;
 
     public LocationData() {
         this.latLng = new LatLng();
         deviceSpeed = 0;
         roadSpeedLimit = "";
+        alertMessage = null;
     }
 
     public LocationData(LatLng latLng) {
         this.latLng = latLng;
         deviceSpeed = 0;
         roadSpeedLimit = "";
+        alertMessage = null;
     }
 
     public LocationData(LatLng latLng, float deviceSpeed, String roadSpeedLimit) {
         this.latLng = latLng;
         this.deviceSpeed = deviceSpeed;
         this.roadSpeedLimit = roadSpeedLimit;
+        alertMessage = null;
     }
 
     public LatLng getLatLng() {
@@ -51,5 +55,13 @@ public class LocationData {
 
     public void setRoadSpeedLimit(String roadSpeedLimit) {
         this.roadSpeedLimit = roadSpeedLimit;
+    }
+
+    public AlertMessage getAlertMessage() {
+        return alertMessage;
+    }
+
+    public void setAlertMessage(AlertMessage alertMessage) {
+        this.alertMessage = alertMessage;
     }
 }

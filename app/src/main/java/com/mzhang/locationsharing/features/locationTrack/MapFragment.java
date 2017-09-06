@@ -116,7 +116,8 @@ public class MapFragment extends Fragment implements LocationListener,
     private LinearLayoutManager mManager;
     private boolean bUserLoggedin = false;
     private final Gson gson = new Gson();
-    private List<LatLng> mRoutePoints = new ArrayList<LatLng>();
+//    private List<LatLng> mRoutePoints = new ArrayList<LatLng>();
+    private Map<String, List<LatLng>> mRoutePoints = new HashMap<>();
 
 //    private GoogleApiClient mGoogleApiClient;
 
@@ -136,6 +137,7 @@ public class MapFragment extends Fragment implements LocationListener,
     // current speed
 //    private String mCurrentSpeed = "";
     private String mSpeedLimit = "";
+    private Map<String, Marker> mMarkers = new HashMap<>();
     private Marker mMarker = null;
     private boolean bIsMarkerClicked = false;
 
@@ -523,6 +525,7 @@ public class MapFragment extends Fragment implements LocationListener,
     private void addMarker(LocationInfo info) {
         String msgUser = info.getName();
         String msgText = info.getmLatLng();
+//        List<LatLng> points = new ArrayList<LatLng>();
 
         Log.d(TAG, "received msg msgText: " + msgText);
         LocationData locationData;
@@ -539,26 +542,41 @@ public class MapFragment extends Fragment implements LocationListener,
         latLng = locationData.getLatLng();
         String currentUser = FirebaseAuth.getInstance().getCurrentUser().getDisplayName();
         if (currentUser.equalsIgnoreCase(msgUser)) {
-            return;
+//            return;
         }
 
         boolean bIsInfoWindowShown = false;
-        if (mMarker != null) {
-            bIsInfoWindowShown = mMarker.isInfoWindowShown();
-        }
+        Marker marker = mMarkers.get(msgUser);
 
         if (mMapboxMap != null) {
-            mMapboxMap.clear();
+            if (marker != null) {
+                bIsInfoWindowShown = marker.isInfoWindowShown();
+                mMapboxMap.removeAnnotation(marker);
+            }
 
             if (isTrackable) {
-                mRoutePoints.add(latLng);
-                drawPolylines(mRoutePoints);
+                List<LatLng> points = mRoutePoints.get(msgUser);
+                if (points == null) {
+                    points = new ArrayList<LatLng>();
+                }
+
+                points.add(latLng);
+                mPolyLine = mPolyLines.get(msgUser);
+                if (mPolyLine != null) {
+                    mMapboxMap.removeAnnotation(mPolyLine);
+                }
+                mRoutePoints.put(msgUser, points);
+                drawPolylines(points);
+                mPolyLines.put(msgUser, mPolyLine);
             }
 
             mMarker = mMapboxMap.addMarker(new MarkerOptions().position(latLng).title(msgUser));
 
             mMarker.setTitle(msgUser + "\n" + "Current Speed: " + locationData.getDeviceSpeed()
                     + "\nRoad Speed Limit: " + locationData.getRoadSpeedLimit());
+
+            mMarkers.put(msgUser, mMarker);
+
             if (bIsInfoWindowShown) {
                 mMarker.showInfoWindow(mMapboxMap, mMapView);
             }
@@ -575,7 +593,7 @@ public class MapFragment extends Fragment implements LocationListener,
         }
 
         String user = FirebaseAuth.getInstance().getCurrentUser().getDisplayName();
-        String msg = "test";
+        String msg = message;
 
         if (msg.isEmpty()) {
             return;
@@ -595,14 +613,16 @@ public class MapFragment extends Fragment implements LocationListener,
 
     }
 
+    private Map<String, Polyline> mPolyLines = new HashMap<>();
     private Polyline mPolyLine;
+
     public void drawPolylines(List<LatLng> points) {
         if (points.size() > 1) {
             LatLng[] pointsArray = points.toArray(new LatLng[points.size()]);
             // Draw Points on MapView
             if (mMapboxMap != null) {
                 if (mPolyLine != null) {
-                    mMapboxMap.removeAnnotation(mPolyLine);
+//                    mMapboxMap.removeAnnotation(mPolyLine);
                     mPolyLine.remove();
                     mPolyLine = null;
                 }
