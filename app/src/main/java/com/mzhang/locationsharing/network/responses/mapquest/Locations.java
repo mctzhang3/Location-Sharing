@@ -21,7 +21,6 @@ public class Locations {
 
     private String street;
 
-    private String nearestIntersection;
 
     private String adminArea1;
 
@@ -52,6 +51,12 @@ public class Locations {
     private String mapUrl;
 
     private String adminArea3Type;
+
+    private NearestIntersection nearestIntersection;
+
+    public void setNearestIntersection(NearestIntersection nearestIntersection) {
+        this.nearestIntersection = nearestIntersection;
+    }
 
     public String getUnknownInput ()
     {
@@ -131,16 +136,6 @@ public class Locations {
     public void setStreet (String street)
     {
         this.street = street;
-    }
-
-    public String getNearestIntersection ()
-    {
-        return nearestIntersection;
-    }
-
-    public void setNearestIntersection (String nearestIntersection)
-    {
-        this.nearestIntersection = nearestIntersection;
     }
 
     public String getAdminArea1 ()

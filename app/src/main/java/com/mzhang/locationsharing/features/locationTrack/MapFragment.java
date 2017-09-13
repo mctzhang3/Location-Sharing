@@ -3,8 +3,12 @@ package com.mzhang.locationsharing.features.locationTrack;
 import android.Manifest;
 import android.app.Activity;
 import android.content.Context;
+import android.content.DialogInterface;
+import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.graphics.Color;
+import android.graphics.drawable.BitmapDrawable;
+import android.graphics.drawable.Drawable;
 import android.location.Location;
 import android.location.LocationListener;
 import android.location.LocationManager;
@@ -16,6 +20,8 @@ import android.support.annotation.Nullable;
 import android.support.v4.app.ActivityCompat;
 import android.support.v4.app.Fragment;
 import android.support.v4.app.FragmentActivity;
+import android.support.v4.graphics.drawable.DrawableCompat;
+import android.support.v7.app.AlertDialog;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.util.Log;
@@ -50,6 +56,8 @@ import com.google.firebase.database.FirebaseDatabase;
 import com.google.firebase.database.Query;
 import com.google.gson.Gson;
 import com.google.gson.JsonSyntaxException;
+import com.mapbox.mapboxsdk.annotations.Icon;
+import com.mapbox.mapboxsdk.annotations.IconFactory;
 import com.mapbox.mapboxsdk.annotations.Marker;
 import com.mapbox.mapboxsdk.annotations.MarkerOptions;
 import com.mapbox.mapboxsdk.annotations.Polyline;
@@ -66,6 +74,7 @@ import com.mzhang.locationsharing.network.RequestController;
 import com.mzhang.locationsharing.network.responses.mapquest.Locations;
 import com.mzhang.locationsharing.network.responses.mapquest.Results;
 import com.mzhang.locationsharing.network.responses.mapquest.Reverse;
+import com.mzhang.locationsharing.network.responses.mapquest.RoadMetadata;
 //import com.mapquest.mapping.MapQuestAccountManager;
 
 import java.util.ArrayList;
@@ -134,12 +143,19 @@ public class MapFragment extends Fragment implements LocationListener,
     private boolean isSharing = false;
     private Menu menu;
 
+    private Icon normalIcon;
+    private Icon redIcon;
+    private Icon currentLocationIcon;
+    boolean bIsInfoWindowShown = true;
+
     // current speed
 //    private String mCurrentSpeed = "";
     private String mSpeedLimit = "";
     private Map<String, Marker> mMarkers = new HashMap<>();
     private Marker mMarker = null;
     private boolean bIsMarkerClicked = false;
+    private int mCurrentMarkerOffsetPix;
+    private static int OFFSET = -9;
 
     public MapFragment() {
         // Required empty public constructor
@@ -225,6 +241,7 @@ public class MapFragment extends Fragment implements LocationListener,
             displayLocationMessages();
         }
 
+        mCurrentMarkerOffsetPix = (int) (getResources().getDisplayMetrics().density * OFFSET + 0.5f);
         return rootView;
     }
 
@@ -236,6 +253,17 @@ public class MapFragment extends Fragment implements LocationListener,
             mMapboxMap.getUiSettings().setRotateGesturesEnabled(false);
             mMapboxMap.getUiSettings().setTiltGesturesEnabled(false);
             mMapboxMap.setMyLocationEnabled(true);
+//            IconFactory iconFactory = IconFactory.getInstance(mActivity.getApplicationContext());
+//            currentLocationIcon = iconFactory.defaultMarkerView();
+//
+//            Drawable drawable = new BitmapDrawable(getResources(), currentLocationIcon.getBitmap());
+//            DrawableCompat.setTint(drawable, mActivity.getApplicationContext()
+//                    .getResources().getColor(R.color.material_deep_purple_500));
+            // Create an Icon object for the marker to use
+//            currentLocationIcon = iconFactory.fromDrawable(drawable);
+
+            mMapboxMap.getMyLocationViewSettings().setForegroundDrawable(
+                    getResources().getDrawable(R.drawable.ic_current_loc), null);
             mMapboxMap.setOnMapClickListener(mapClickListener);
             if (mCurrentLocation != null) {
                 displayLocation(mCurrentLocation);
@@ -301,6 +329,17 @@ public class MapFragment extends Fragment implements LocationListener,
 //            throw new RuntimeException(context.toString()
 //                    + " must implement OnFragmentInteractionListener");
 //        }
+    }
+
+    @Override
+    public void onActivityResult(int requestCode, int resultCode,
+                                    Intent data) {
+        super.onActivityResult(requestCode, resultCode, data);
+
+        if(requestCode == SIGN_IN_REQUEST_CODE) {
+            displayLocationMessages();
+        }
+
     }
 
     @Override
@@ -416,15 +455,16 @@ public class MapFragment extends Fragment implements LocationListener,
                 REQUEST_LOCATION);
     }
 
+    private LocationData mLocationData;
     @Override
     public void onLocationChanged(Location location) {
         mCurrentLocation = location;
         LatLng latLng = new LatLng(location.getLatitude(), location.getLongitude());
         sendSpeedLimitRequest(latLng);
         float speed = location.getSpeed() * 3600 / 1609;
-        speed = ((int) (speed * 10)) / 10;
-        LocationData locationData = new LocationData(latLng, speed, mSpeedLimit);
-        String locString = gson.toJson(locationData);
+        speed = Math.round(speed * 10) / 10; //(int) (speed * 10)) / 10;
+        mLocationData = new LocationData(latLng, speed, mSpeedLimit);
+        String locString = gson.toJson(mLocationData);
         if (isSharing) {
             sendLocationMsg(locString);
         }
@@ -432,6 +472,10 @@ public class MapFragment extends Fragment implements LocationListener,
     }
 
     private void sendSpeedLimitRequest(LatLng latLng) {
+        if (getActivity() == null) {
+            return;
+        }
+
         StringBuffer pathParam = new StringBuffer("");
         String latLngStr = Double.toString(latLng.getLatitude()) + ","
                 + Double.toString(latLng.getLongitude());
@@ -455,7 +499,9 @@ public class MapFragment extends Fragment implements LocationListener,
 
     @Override
     public void onErrorResponse(VolleyError error) {
+        Log.d(TAG, "onErrorResponse: " + error.toString());
 
+        mSpeedLimit = "";
     }
 
     @Override
@@ -465,8 +511,12 @@ public class MapFragment extends Fragment implements LocationListener,
             Results[] results = reverse.getResults();
             Locations[] locations = results[0].getLocations();
 //            Results results1 = results[0];
-            mSpeedLimit = locations[0].getRoadMetadata().getSpeedLimit();
-
+            RoadMetadata roadMetaData = locations[0].getRoadMetadata();
+            if (roadMetaData != null) {
+                mSpeedLimit = roadMetaData.getSpeedLimit();
+            } else {
+                mSpeedLimit = "";
+            }
         }
 
     }
@@ -504,7 +554,7 @@ public class MapFragment extends Fragment implements LocationListener,
 
 //                String currentUser = FirebaseAuth.getInstance().getCurrentUser().getDisplayName();
 
-                if ((msgText != null) && isSharing) {
+                if ((msgText != null) && isSharing && getActivity() != null) {
                     addMarker(info);
                 }
             }
@@ -522,10 +572,46 @@ public class MapFragment extends Fragment implements LocationListener,
         mMessages.setAdapter(mAdapter);
     }
 
+    private void addMyLocationMarker() {
+        String currentUser = FirebaseAuth.getInstance().getCurrentUser().getDisplayName();
+        IconFactory iconFactory = IconFactory.getInstance(mActivity);
+        float deviceSpeed = 0;
+        String speedLimit = "";
+        LatLng latLng;
+
+        Marker marker = mMarkers.get(currentUser);
+
+        if (mMapboxMap != null) {
+            if (marker != null) {
+                mMapboxMap.removeAnnotation(marker);
+            }
+
+            if (mCurrentLocation != null) {
+                if (currentLocationIcon == null) {
+                    currentLocationIcon = iconFactory.fromResource(R.drawable.ic_current_loc);
+                }
+                latLng = new LatLng(mCurrentLocation.getLatitude(), mCurrentLocation.getLongitude());
+
+                if (mLocationData != null) {
+                    deviceSpeed = mLocationData.getDeviceSpeed();
+                    speedLimit = mLocationData.getRoadSpeedLimit();
+                }
+                mMarker = mMapboxMap.addMarker(new MarkerOptions().position(latLng)
+                        .title(currentUser).icon(currentLocationIcon)
+                        .setSnippet("Current Speed: " + deviceSpeed
+                                + "\nRoad Speed Limit: " + speedLimit));
+            }
+
+            mMarker.showInfoWindow(mMapboxMap, mMapView);
+            mMarkers.put(currentUser, mMarker);
+        }
+    }
+
     private void addMarker(LocationInfo info) {
         String msgUser = info.getName();
         String msgText = info.getmLatLng();
 //        List<LatLng> points = new ArrayList<LatLng>();
+        String currentUser = FirebaseAuth.getInstance().getCurrentUser().getDisplayName();
 
         Log.d(TAG, "received msg msgText: " + msgText);
         LocationData locationData;
@@ -540,21 +626,16 @@ public class MapFragment extends Fragment implements LocationListener,
         }
 
         latLng = locationData.getLatLng();
-        String currentUser = FirebaseAuth.getInstance().getCurrentUser().getDisplayName();
-        if (currentUser.equalsIgnoreCase(msgUser)) {
-//            return;
-        }
 
-        boolean bIsInfoWindowShown = false;
         Marker marker = mMarkers.get(msgUser);
 
         if (mMapboxMap != null) {
             if (marker != null) {
-                bIsInfoWindowShown = marker.isInfoWindowShown();
+//                bIsInfoWindowShown = marker.isInfoWindowShown();
                 mMapboxMap.removeAnnotation(marker);
             }
 
-            if (isTrackable) {
+            if (isTrackable && !currentUser.equalsIgnoreCase(msgUser)) {
                 List<LatLng> points = mRoutePoints.get(msgUser);
                 if (points == null) {
                     points = new ArrayList<LatLng>();
@@ -570,20 +651,197 @@ public class MapFragment extends Fragment implements LocationListener,
                 mPolyLines.put(msgUser, mPolyLine);
             }
 
-            mMarker = mMapboxMap.addMarker(new MarkerOptions().position(latLng).title(msgUser));
+            IconFactory iconFactory = IconFactory.getInstance(mActivity);
+            Drawable drawable = new BitmapDrawable(getResources(), iconFactory.defaultMarker().getBitmap());
+            Icon icon;
+            if (currentUser.equalsIgnoreCase(msgUser)) {
+//                LatLng currentLatLng = new LatLng(mMapboxMap.getMyLocation().getLatitude(),
+//                        mMapboxMap.getMyLocation().getLongitude());
+                if(currentLocationIcon == null) {
+                    currentLocationIcon = iconFactory.fromResource(R.drawable.ic_current_loc);
+                }
+                icon = currentLocationIcon;
+//                latLng = currentLatLng;
+//                mMarker.setIcon(currentLocationIcon);
+//                mMarker.setTopOffsetPixels(mCurrentMarkerOffsetPix);
+//                mMarker.setPosition(currentLatLng);
+//                mMapboxMap.setMyLocationEnabled(false);
+            } else if (!isSpeedLimitExceeded(locationData)) {
+                if (normalIcon == null) {
+                    DrawableCompat.setTint(drawable, mActivity.getApplicationContext()
+                            .getResources().getColor(R.color.material_green_500));
+                    // Create an Icon object for the marker to use
+                    normalIcon = iconFactory.fromDrawable(drawable);
+                }
+                icon = normalIcon;
+//                mMarker.getIcon().getBitmap();
+//                mMarker.setIcon(normalIcon);
+            } else {
+//                if (mDialog !=null && mDialog.isShowing()) {
+//                    mDialog.dismiss();
+//                }
 
-            mMarker.setTitle(msgUser + "\n" + "Current Speed: " + locationData.getDeviceSpeed()
-                    + "\nRoad Speed Limit: " + locationData.getRoadSpeedLimit());
+                if (redIcon == null) {
+                    DrawableCompat.setTint(drawable, mActivity.getApplicationContext()
+                            .getResources().getColor(R.color.material_red_a200));
+                    // Create an Icon object for the marker to use
+                    redIcon = iconFactory.fromDrawable(drawable);
+                }
+//                mMarker.setIcon(redIcon);
+                icon = redIcon;
+            }
+
+//            mMarker.setSnippet("Current Speed: " + locationData.getDeviceSpeed()
+//                    + "\nRoad Speed Limit: " + locationData.getRoadSpeedLimit());
+
+//            if (mMarker != null && mMarker.isInfoWindowShown()) {
+//                mMarker.hideInfoWindow();
+//            }
+
+            mMarker = mMapboxMap.addMarker(new MarkerOptions().position(latLng)
+                    .title(msgUser).icon(icon)
+                    .setSnippet("Current Speed: " + locationData.getDeviceSpeed()
+                            + "\nRoad Speed Limit: " + locationData.getRoadSpeedLimit()));
+
+            if (currentUser.equalsIgnoreCase(msgUser)) {
+                mMarker.setTopOffsetPixels(mCurrentMarkerOffsetPix);
+            }
 
             mMarkers.put(msgUser, mMarker);
 
+            displayAlertMessage(msgUser, locationData);
             if (bIsInfoWindowShown) {
                 mMarker.showInfoWindow(mMapboxMap, mMapView);
             }
         }
     }
 
-//    private void displayMarkerInfoWindow() {
+    private void sendSpeedAlertMessage() {
+//        mLocationData.getAlertMessage().setMessageTo(msgUser);
+//        mLocationData.getAlertMessage().setMessageBody("You have exceeded the speed limit. Slow down!");
+        String locString = gson.toJson(mLocationData);
+        if (isSharing) {
+            sendLocationMsg(locString);
+        }
+    }
+
+    private boolean isSpeedLimitExceeded(LocationData locationData) {
+        boolean exceeded = false;
+        float speed = locationData.getDeviceSpeed();
+        String SpeedLimitStr = locationData.getRoadSpeedLimit();
+        float speedLimit = 0;
+
+        if (SpeedLimitStr != null && !SpeedLimitStr.isEmpty()) {
+            speedLimit = Float.parseFloat(SpeedLimitStr);
+        }
+
+        if ( (speedLimit != 0) && (speed > speedLimit)) {
+            exceeded = true;
+        }
+        return exceeded;
+    }
+
+    private int mExceededCount = 0;
+    private void displayAlertMessage(String user, LocationData locationData) {
+        String currentUser = FirebaseAuth.getInstance().getCurrentUser().getDisplayName();
+
+        AlertMessage alertMessage = locationData.getAlertMessage();
+        String msgTo = null;
+        if (alertMessage != null) {
+            msgTo = locationData.getAlertMessage().getMessageTo();
+        }
+
+        if ((msgTo != null) && msgTo.equalsIgnoreCase(currentUser)) {
+            String msg = user + ":\n" + locationData.getAlertMessage().getMessageBody();
+            showReceivedDialog(msg, "Ok");
+        }
+
+        if (isSpeedLimitExceeded(locationData)) {
+            if (!user.equalsIgnoreCase(currentUser)) {
+                String msg = user + " exceeds speed limit.\n Would you like to send an alert message?";
+                mLocationData.getAlertMessage().setMessageTo(user);
+                mLocationData.getAlertMessage().setMessageBody("You have exceeded the speed limit. Slow down!");
+                if ((timer != null && timer.isAlive()) || (mSendingDialog != null && mSendingDialog.isShowing())) {
+                    return;
+                }
+
+                showSpeedExceedDialog(msg, "yes", "No");
+//                sendSpeedAlertMessage(user);
+            }
+        } else if (!user.equalsIgnoreCase(currentUser) && mSendingDialog != null && mSendingDialog.isShowing()) {
+            mSendingDialog.dismiss();
+        }
+    }
+
+    private AlertDialog mSendingDialog;
+    private AlertDialog mReceivingDialog;
+    private static int NO_ALERT_MSG_TIME = 5 * 1000;
+    private Thread timer;
+//    private boolean bDisplayAlert = true;
+
+    private void showSpeedExceedDialog(String message, String positiveMsg, String negMsg) {
+        if (mSendingDialog == null) {
+            mSendingDialog = new AlertDialog.Builder(mActivity).create();
+        }
+
+        mSendingDialog.setMessage(message);
+        mSendingDialog.setCancelable(true);
+        mSendingDialog.setButton(DialogInterface.BUTTON_POSITIVE, positiveMsg, listener);
+        mSendingDialog.setButton(DialogInterface.BUTTON_NEGATIVE, negMsg, listener);
+        mSendingDialog.show();
+    }
+
+    private void showReceivedDialog(String message, String positiveMsg) {
+//        if ((timer != null && timer.isAlive()) || (mDialog != null && mDialog.isShowing())) {
+//            return;
+//        }
+
+        if (mReceivingDialog == null) {
+            mReceivingDialog = new AlertDialog.Builder(mActivity).create();
+        }
+
+        mReceivingDialog.setMessage(message);
+        mReceivingDialog.setCancelable(true);
+        mReceivingDialog.setButton(DialogInterface.BUTTON_POSITIVE, positiveMsg,
+                new DialogInterface.OnClickListener() {
+
+                    @Override
+                    public void onClick(DialogInterface dialog, int which) {
+                        dialog.dismiss();
+                    }
+                });
+        mReceivingDialog.show();
+    }
+
+    DialogInterface.OnClickListener listener = new DialogInterface.OnClickListener() {
+
+        @Override
+        public void onClick(DialogInterface dialog, int which) {
+            switch (which) {
+                case DialogInterface.BUTTON_POSITIVE:
+//                    if (dialog.getButton(DialogInterface.BUTTON_POSITIVE).getText().toString().equalsIgnoreCase("ok")) {
+//                        break;
+//                    }
+                    sendSpeedAlertMessage();
+//                    break;
+                case DialogInterface.BUTTON_NEGATIVE:
+                    timer = new Thread() {
+                        public void run() {
+                            try {
+                                sleep(NO_ALERT_MSG_TIME);
+                            } catch (InterruptedException e) {
+                                e.printStackTrace();
+                            }
+                        }
+                    };
+                    timer.start();
+                    dialog.dismiss();
+                    break;
+            }
+        }
+    };
+
+    //    private void displayMarkerInfoWindow() {
 //            mMarker.showInfoWindow(mMapboxMap, mMapView);
 //    }
 
@@ -650,7 +908,8 @@ public class MapFragment extends Fragment implements LocationListener,
 
         if (marker.isInfoWindowShown()) {
             marker.hideInfoWindow();
-//            bIsMarkerClicked = false;
+            bIsInfoWindowShown = false;
+            //            bIsMarkerClicked = false;
         } else {
             marker.showInfoWindow(mMapboxMap, mMapView);
         }
@@ -719,6 +978,8 @@ public class MapFragment extends Fragment implements LocationListener,
                 return true;
             case R.id.menu_enable_share:
                 if (isSharing) {
+                    mMapboxMap.setMyLocationEnabled(true);
+                    bIsInfoWindowShown = true;
                     isSharing = false;
                     isTrackable = false;
                     mRoutePoints.clear();
@@ -728,7 +989,9 @@ public class MapFragment extends Fragment implements LocationListener,
                     menu.getItem(1).setTitle(R.string.enable_sharing);
                 } else {
                     isSharing = true;
+                    addMyLocationMarker();
                     menu.getItem(1).setTitle(R.string.disable_sharing);
+                    mMapboxMap.setMyLocationEnabled(false);
                 }
                 return true;
             case R.id.menu_enable_track:

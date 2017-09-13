@@ -3,4 +3,57 @@
     <color name="colorPrimary">#3F51B5</color>
     <color name="colorPrimaryDark">#303F9F</color>
     <color name="colorAccent">#FF4081</color>
+
+    <color name="divider_color">#CCCCCC</color>
+    <color name="light_gray">#D3D3D3</color>
+    <color name="sub_text_color">#959595</color>
+    <color name="bold_text">#333333</color>
+    <color name="transparent">#00000000</color>
+    <color name="translucent_gray">#80444444</color>
+    <color name="rokan_grey_color">#e4e5e3</color>
+    <color name="rokan_normal_text_color">#383838</color>
+    <color name="rokan_bold_text_color">#1a242b</color>
+    <color name="rokan_green">#8fd4d5</color>
+    <color name="general_divider">#d2d3d4</color>
+    <color name="turn_polyline_color">#157BE3</color>
+    <color name="alternate_polyline_color">#B4B4B4</color>
+    <color name="exit_navigation_red">#FB2C03</color>
+    <color name="speed_animation_red">#E15C5C</color>
+    <color name="white">#FFFFFF</color>
+    <color name="black">#000000</color>
+    <color name="list_background">#F6F6F6</color>
+    <color name="settings_divider_dark">#D7D7D7</color>
+    <color name="settings_divider_light">#4C4C4C</color>
+    <color name="radio_uncheckedd">#8e8e8e</color>
+    <color name="searchForLocationTextColor">#1A242B</color>
+
+    <!-- Text -->
+    <color name="text_default_material_dark_primary">#ffffffff</color>
+    <color name="text_default_material_light_primary">#de000000</color>
+    <color name="text_default_material_dark_secondary">#b3ffffff</color>
+    <color name="text_default_material_light_secondary">#8a000000</color>
+
+    <color name="material_deep_purple_50">#EDE7F6</color>
+    <color name="material_deep_purple_500">#673AB7</color>
+    <color name="material_deep_purple_700">#512DA8</color>
+    <color name="material_deep_purple_a200">#E040FB</color>
+
+    <color name="material_green_50">#E8F5E9</color>
+    <color name="material_green_500">#4CAF50</color>
+    <color name="material_green_700">#388E3C</color>
+    <color name="material_green_300">#AED581</color>
+    <color name="material_green_a200">#69F0AE</color>
+
+    <color name="material_gray_300">#E0E0E0</color>
+    <color name="material_gray_850">#ff303030</color>
+    <color name="material_gray_900">#ff212121</color>
+
+    <color name="material_lime_a700">#AEEA00</color>
+
+    <color name="material_purple_50">#F3E5F5</color>
+    <color name="material_purple_a700">#AA00FF</color>
+
+    <color name="material_red_a200">#FF5252</color>
+
+    <color name="material_deep_teal_a200">#ff80cbc4</color>
 </resources>

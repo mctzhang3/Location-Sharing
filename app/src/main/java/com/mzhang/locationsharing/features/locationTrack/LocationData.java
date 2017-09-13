@@ -16,21 +16,21 @@ public class LocationData {
         this.latLng = new LatLng();
         deviceSpeed = 0;
         roadSpeedLimit = "";
-        alertMessage = null;
+        alertMessage = new AlertMessage();
     }
 
     public LocationData(LatLng latLng) {
         this.latLng = latLng;
         deviceSpeed = 0;
         roadSpeedLimit = "";
-        alertMessage = null;
+        alertMessage = new AlertMessage();
     }
 
     public LocationData(LatLng latLng, float deviceSpeed, String roadSpeedLimit) {
         this.latLng = latLng;
         this.deviceSpeed = deviceSpeed;
         this.roadSpeedLimit = roadSpeedLimit;
-        alertMessage = null;
+        alertMessage = new AlertMessage();
     }
 
     public LatLng getLatLng() {
