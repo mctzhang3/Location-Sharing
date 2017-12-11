@@ -233,6 +233,7 @@ public class MapFragment extends Fragment implements LocationListener,
             startActivityForResult(
                     AuthUI.getInstance()
                             .createSignInIntentBuilder()
+                            .setAllowNewEmailAccounts(true)
                             .build(),
                     SIGN_IN_REQUEST_CODE
             );
