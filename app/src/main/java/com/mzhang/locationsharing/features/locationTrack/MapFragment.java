@@ -146,7 +146,7 @@ public class MapFragment extends Fragment implements LocationListener,
     private Icon normalIcon;
     private Icon redIcon;
     private Icon currentLocationIcon;
-    boolean bIsInfoWindowShown = true;
+    boolean bIsInfoWindowShown = false;
 
     // current speed
 //    private String mCurrentSpeed = "";
@@ -156,6 +156,7 @@ public class MapFragment extends Fragment implements LocationListener,
     private boolean bIsMarkerClicked = false;
     private int mCurrentMarkerOffsetPix;
     private static int OFFSET = -9;
+    private float mSpeedLimitThreshold = 9f;
 
     public MapFragment() {
         // Required empty public constructor
@@ -603,7 +604,7 @@ public class MapFragment extends Fragment implements LocationListener,
                                 + "\nRoad Speed Limit: " + speedLimit));
             }
 
-            mMarker.showInfoWindow(mMapboxMap, mMapView);
+//            mMarker.showInfoWindow(mMapboxMap, mMapView);
             mMarkers.put(currentUser, mMarker);
         }
     }
@@ -632,8 +633,10 @@ public class MapFragment extends Fragment implements LocationListener,
 
         if (mMapboxMap != null) {
             if (marker != null) {
-//                bIsInfoWindowShown = marker.isInfoWindowShown();
+                bIsInfoWindowShown = marker.isInfoWindowShown();
                 mMapboxMap.removeAnnotation(marker);
+            } else {
+                bIsInfoWindowShown = false;
             }
 
             if (isTrackable && !currentUser.equalsIgnoreCase(msgUser)) {
@@ -736,13 +739,15 @@ public class MapFragment extends Fragment implements LocationListener,
             speedLimit = Float.parseFloat(SpeedLimitStr);
         }
 
-        if ( (speedLimit != 0) && (speed > speedLimit)) {
+        if ( (speedLimit != 0) && (speed > speedLimit + mSpeedLimitThreshold)) {
             exceeded = true;
         }
         return exceeded;
     }
 
     private int mExceededCount = 0;
+    private String mAlertMsgUser = "";
+
     private void displayAlertMessage(String user, LocationData locationData) {
         String currentUser = FirebaseAuth.getInstance().getCurrentUser().getDisplayName();
 
@@ -759,6 +764,7 @@ public class MapFragment extends Fragment implements LocationListener,
 
         if (isSpeedLimitExceeded(locationData)) {
             if (!user.equalsIgnoreCase(currentUser)) {
+                mAlertMsgUser = user;
                 String msg = user + " exceeds speed limit.\n Would you like to send an alert message?";
                 mLocationData.getAlertMessage().setMessageTo(user);
                 mLocationData.getAlertMessage().setMessageBody("You have exceeded the speed limit. Slow down!");
@@ -769,14 +775,15 @@ public class MapFragment extends Fragment implements LocationListener,
                 showSpeedExceedDialog(msg, "yes", "No");
 //                sendSpeedAlertMessage(user);
             }
-        } else if (!user.equalsIgnoreCase(currentUser) && mSendingDialog != null && mSendingDialog.isShowing()) {
+        } else if (!user.equalsIgnoreCase(currentUser) && !user.equalsIgnoreCase(mAlertMsgUser)
+                && mSendingDialog != null && mSendingDialog.isShowing()) {
             mSendingDialog.dismiss();
         }
     }
 
     private AlertDialog mSendingDialog;
     private AlertDialog mReceivingDialog;
-    private static int NO_ALERT_MSG_TIME = 5 * 1000;
+    private static int NO_ALERT_MSG_TIME = 30 * 1000;
     private Thread timer;
 //    private boolean bDisplayAlert = true;
 
@@ -790,6 +797,17 @@ public class MapFragment extends Fragment implements LocationListener,
         mSendingDialog.setButton(DialogInterface.BUTTON_POSITIVE, positiveMsg, listener);
         mSendingDialog.setButton(DialogInterface.BUTTON_NEGATIVE, negMsg, listener);
         mSendingDialog.show();
+
+        timer = new Thread() {
+            public void run() {
+                try {
+                    sleep(NO_ALERT_MSG_TIME);
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
+            }
+        };
+        timer.start();
     }
 
     private void showReceivedDialog(String message, String positiveMsg) {
@@ -826,16 +844,6 @@ public class MapFragment extends Fragment implements LocationListener,
                     sendSpeedAlertMessage();
 //                    break;
                 case DialogInterface.BUTTON_NEGATIVE:
-                    timer = new Thread() {
-                        public void run() {
-                            try {
-                                sleep(NO_ALERT_MSG_TIME);
-                            } catch (InterruptedException e) {
-                                e.printStackTrace();
-                            }
-                        }
-                    };
-                    timer.start();
                     dialog.dismiss();
                     break;
             }
@@ -909,10 +917,11 @@ public class MapFragment extends Fragment implements LocationListener,
 
         if (marker.isInfoWindowShown()) {
             marker.hideInfoWindow();
-            bIsInfoWindowShown = false;
+//            bIsInfoWindowShown = false;
             //            bIsMarkerClicked = false;
         } else {
             marker.showInfoWindow(mMapboxMap, mMapView);
+//            bIsInfoWindowShown = true;
         }
 
         return true;
@@ -980,7 +989,7 @@ public class MapFragment extends Fragment implements LocationListener,
             case R.id.menu_enable_share:
                 if (isSharing) {
                     mMapboxMap.setMyLocationEnabled(true);
-                    bIsInfoWindowShown = true;
+//                    bIsInfoWindowShown = true;
                     isSharing = false;
                     isTrackable = false;
                     mRoutePoints.clear();
